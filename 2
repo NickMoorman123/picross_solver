@@ -17,13 +17,13 @@ fn main() -> anyhow::Result<()> {
         num_cols,
         num_rows,
         &puzzle,
-    )?;
+    );
 
     let mut grid: Vec<Vec<&str>> = Vec::new();
     for _r in 0..num_rows {
         grid.push(vec!["2"; num_cols]);
     }
-    iterate(&mut grid, num_cols, num_rows, &col_headers, &row_headers)?;
+    iterate(&mut grid, num_cols, num_rows, &col_headers, &row_headers);
 
     let mut solvable = true;
     for r in 0..num_rows {
@@ -154,8 +154,6 @@ fn iterate(
             break;
         }
     }
-
-    Ok(())
 }
 
 fn row_update(
@@ -187,7 +185,7 @@ fn row_update(
     }
     for c in 0..num_cols {
         if cols_next[c] {
-            col_update(c, grid, num_cols, num_rows, col_headers, row_headers)?;
+            col_update(c, grid, num_cols, num_rows, col_headers, row_headers);
         }
     }
 
@@ -226,7 +224,7 @@ fn col_update(
     }
     for r in 0..num_rows {
         if rows_next[r] {
-            row_update(r, grid, num_cols, num_rows, col_headers, row_headers)?;
+            row_update(r, grid, num_cols, num_rows, col_headers, row_headers);
         }
     }
 
@@ -263,11 +261,11 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
     //edges outside the extremes
     for i in 0..left[0] {
         possiblities[i].cant_be_filled();
-        possiblities[i].may_be_empty()?;
+        possiblities[i].may_be_empty();
     }
     for i in right[nums_len - 1] + 1..len {
         possiblities[i].cant_be_filled();
-        possiblities[i].may_be_empty()?;
+        possiblities[i].may_be_empty();
     }
     //add possibilities to cells based on possible locations
     for num_index in 0..nums_len {
@@ -277,8 +275,8 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
             //min is ambiguous
             for i in left[num_index]..left[num_index] + num {
                 if line[i] == "2" {
-                    possiblities[i].may_be_filled()?;
-                    possiblities[i].may_be_empty()?;
+                    possiblities[i].may_be_filled();
+                    possiblities[i].may_be_empty();
                 }
             }
             //in between, mark cbfilled where there's room and cbempty where it's not filled
@@ -286,21 +284,21 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
                 if line[index] == "2" {
                     if theres_room(line.clone(), index as i8, num as i8, 1) {
                         for i in index..index + num {
-                            possiblities[i].may_be_filled()?;
+                            possiblities[i].may_be_filled();
                         }
                     } else if theres_room(line.clone(), index as i8, num as i8, -1) {
                         for i in index..index + num {
-                            possiblities[i].may_be_filled()?;
+                            possiblities[i].may_be_filled();
                         }
                     }
-                    possiblities[index].may_be_empty()?;
+                    possiblities[index].may_be_empty();
                 }
             }
             //max is ambiguous
             for i in right[num_index] - num + 1..right[num_index] + 1 {
                 if line[i] == "2" {
-                    possiblities[i].may_be_filled()?;
-                    possiblities[i].may_be_empty()?;
+                    possiblities[i].may_be_filled();
+                    possiblities[i].may_be_empty();
                 }
             }
         } else {
@@ -308,8 +306,8 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
             //write it all as ambiguous
             for i in left[num_index]..right[num_index] + 1 {
                 if line[i] == "2" {
-                    possiblities[i].may_be_filled()?;
-                    possiblities[i].may_be_empty()?;
+                    possiblities[i].may_be_filled();
+                    possiblities[i].may_be_empty();
                 }
             }
             //rewrite the overlapping portion
@@ -324,7 +322,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
         //if possible spots for consecutive nums have them non-overlapping
         for i in right[num_index - 1] + 1..left[num_index] {
             possiblities[i].cant_be_filled();
-            possiblities[i].may_be_empty()?;
+            possiblities[i].may_be_empty();
         }
     }
 
