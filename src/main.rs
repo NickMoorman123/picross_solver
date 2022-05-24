@@ -15,13 +15,13 @@ fn main() {
 
     let mut col_headers: Vec<Vec<usize>> = Vec::new();
     let mut row_headers: Vec<Vec<usize>> = Vec::new();
-    compute_headers(&mut col_headers, &mut row_headers, num_cols, num_rows, &mut puzzle);
+    compute_headers(&mut col_headers, &mut row_headers, num_cols, num_rows, &puzzle);
 
     let mut grid: Vec<Vec<&str>> = Vec::new();
     for _r in 0..num_rows {
         grid.push(vec!["2"; num_cols]);
     }
-    iterate(&mut grid, num_cols, num_rows, &puzzle, &col_headers, &row_headers);
+    iterate(&mut grid, num_cols, num_rows, &col_headers, &row_headers);
 
     let mut solvable = true;
     for r in 0..num_rows {
@@ -48,13 +48,25 @@ fn check_data(num_cols: &mut usize, num_rows: &mut usize, puzzle: &mut Vec<Strin
         .has_headers(false)
         .from_reader(io::stdin());
 
-    let first = rdr.records().next().unwrap().unwrap();
+    let first = rdr.records().next().unwrap()?;
     *num_cols = first[0].parse()?;
     *num_rows = first[1].parse()?;
 
+    if first.len() != *num_cols {
+        println!("data corrupted: number of columns incorrect");
+        process::exit(2);
+    }
+
+    let mut counter: usize = 0;
     for result in rdr.records() {
         let record = result?;
         puzzle.push(record);
+        counter += 1;
+    }
+
+    if counter != *num_rows {
+        println!("data corrupted: number of rows incorrect");
+        process::exit(2);
     }
     Ok(())
 }
@@ -69,6 +81,9 @@ fn compute_headers(col_headers: &mut Vec<Vec<usize>>, row_headers: &mut Vec<Vec<
                 count = 0;
             } else if puzzle[r][c] == *"1" {
                 count += 1;
+            } else if puzzle[r][c] != *"0" {
+                println!("data corrupted: bad cell data");
+                process::exit(2);
             }
         }
         if count > 0 || header.is_empty() { header.push(count); }
@@ -93,17 +108,17 @@ fn compute_headers(col_headers: &mut Vec<Vec<usize>>, row_headers: &mut Vec<Vec<
     }
 }
 
-fn iterate<'a>(grid: &mut Vec<Vec<&'a str>>, num_cols: usize, num_rows: usize, puzzle: &'a Vec<StringRecord>, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) {
+fn iterate(grid: &mut Vec<Vec<&str>>, num_cols: usize, num_rows: usize, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) {
     let mut changed: bool;
     loop {
         changed = false;
         for r in 0..num_rows {
-            if row_update(r, grid, num_cols, num_rows, puzzle, col_headers, row_headers) {
+            if row_update(r, grid, num_cols, num_rows, col_headers, row_headers) {
                 changed = true;
             }
         }
         for c in 0..num_cols {
-            if col_update(c, grid, num_cols, num_rows, puzzle, col_headers, row_headers) {
+            if col_update(c, grid, num_cols, num_rows, col_headers, row_headers) {
                 changed = true;
             }
         }
@@ -111,7 +126,7 @@ fn iterate<'a>(grid: &mut Vec<Vec<&'a str>>, num_cols: usize, num_rows: usize, p
     }
 }
 
-fn row_update<'b>(row: usize, grid: &mut Vec<Vec<&'b str>>, num_cols: usize, num_rows: usize, puzzle: &'b Vec<StringRecord>, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) -> bool {
+fn row_update(row: usize, grid: &mut Vec<Vec<&str>>, num_cols: usize, num_rows: usize, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) -> bool {
     let mut changed = false;
 
     let line: Vec<&str> = grid[row].clone();
@@ -127,21 +142,21 @@ fn row_update<'b>(row: usize, grid: &mut Vec<Vec<&'b str>>, num_cols: usize, num
                 continue;
             } else {
                 println!("Contradiction found");
-                process::exit(2);
+                process::exit(3);
             }
         }
         cols_next.push(false);
     }
     for c in 0..num_cols {
         if cols_next[c] {
-            col_update(c, grid, num_cols, num_rows, puzzle, col_headers, row_headers);
+            col_update(c, grid, num_cols, num_rows, col_headers, row_headers);
         }
     }
     
     changed
 }
 
-fn col_update<'b>(col: usize, grid: &mut Vec<Vec<&'b str>>, num_cols: usize, num_rows: usize, puzzle: &'b Vec<StringRecord>, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) -> bool {
+fn col_update(col: usize, grid: &mut Vec<Vec<&str>>, num_cols: usize, num_rows: usize, col_headers: &Vec<Vec<usize>>, row_headers: &Vec<Vec<usize>>) -> bool {
     let mut changed = false;
 
     let mut line: Vec<&str> = Vec::new();
@@ -160,14 +175,14 @@ fn col_update<'b>(col: usize, grid: &mut Vec<Vec<&'b str>>, num_cols: usize, num
                 continue;
             } else {
                 println!("Contradiction found");
-                process::exit(2);
+                process::exit(3);
             }
         }
         rows_next.push(false);
     }
     for r in 0..num_rows {
         if rows_next[r] {
-            row_update(r, grid, num_cols, num_rows, puzzle, col_headers, row_headers);
+            row_update(r, grid, num_cols, num_rows, col_headers, row_headers);
         }
     }
     
@@ -285,7 +300,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> Vec<&str> {
         } else if cb_filled == "F" && cb_empty == "F" {
             //if both are deconfirmed then there is a contradiction in the logic
             println!("Contradiction found");
-            process::exit(5);
+            process::exit(6);
         } else if cb_filled == "F" {
             //deconfirmed Filled, while Empty uninitialized, can say empty
             new_line.push("0");
@@ -361,7 +376,7 @@ fn get_extreme(line: Vec<&str>, nums: Vec<usize>, dir: i8) -> Vec<usize> {
     while index >= 0 && index < len {
         if line[index as usize] == "1" {
             println!("Contradiction found");
-            process::exit(3);
+            process::exit(4);
         }
         index -= dir;
     }
@@ -395,7 +410,7 @@ fn theres_room(line: Vec<&str>, index: i8, num: i8, dir: i8) -> bool {
     true
 }
 
-struct Square<'c> { could_be_filled: &'c str, could_be_empty: &'c str }
+struct Square<'a> { could_be_filled: &'a str, could_be_empty: &'a str }
 
 trait Possibility {
     fn new() -> Self;
@@ -425,7 +440,7 @@ impl Possibility for Square<'_> {
     fn may_be_filled(&mut self) {
         if self.could_be_filled == "F" {
             println!("Contradiction found");
-            process::exit(4);
+            process::exit(5);
         } else {
             self.could_be_filled = "T";
         }
@@ -434,7 +449,7 @@ impl Possibility for Square<'_> {
     fn may_be_empty(&mut self) {
         if self.could_be_empty == "F" {
             println!("Contradiction found");
-            process::exit(4);
+            process::exit(5);
         } else {
             self.could_be_empty = "T";
         }
