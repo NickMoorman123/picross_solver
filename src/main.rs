@@ -19,10 +19,8 @@ fn main() -> anyhow::Result<()> {
         &puzzle,
     )?;
 
-    let mut grid: Vec<Vec<&str>> = Vec::new();
-    for _r in 0..num_rows {
-        grid.push(vec!["2"; num_cols]);
-    }
+    let mut grid = vec![vec!["2"; num_cols]; num_rows];
+
     iterate(&mut grid, num_cols, num_rows, &col_headers, &row_headers)?;
 
     let mut solvable = true;
@@ -514,4 +512,3 @@ impl Possibility for Square<'_> {
         self.could_be_empty = "F";
     }
 }
-
