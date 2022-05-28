@@ -52,6 +52,12 @@ struct TableSize {
     rows: usize,
 }
 
+/// Read an expected CSV format from standard input.
+///
+/// Input will be parsed and a vector of `StringRecord` is returned as well as `TableSize` so long
+/// as the input is valid.
+///
+/// TODO: document what the csv input should look like.
 fn read_input() -> Result<(Vec<StringRecord>, TableSize), anyhow::Error> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
