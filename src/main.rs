@@ -334,22 +334,22 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
     for i in 0..len {
         let cb_filled = possiblities[i].could_be_filled;
         let cb_empty = possiblities[i].could_be_empty;
-        if cb_filled == "T" && cb_empty == "T" {
+        if cb_filled == IsFilled::Yes && cb_empty == IsFilled::Yes {
             //we don't know whic yet
             new_line.push("2");
-        } else if cb_filled == "T" {
+        } else if cb_filled == IsFilled::Yes {
             //confirm fill whether Empty is deconfirmed or uninitialized
             new_line.push("1");
-        } else if cb_empty == "T" {
+        } else if cb_empty == IsFilled::Yes {
             //confirm empty whether Filled is deconfirmed or uninitialized
             new_line.push("0");
-        } else if cb_filled == "F" && cb_empty == "F" {
+        } else if cb_filled == IsFilled::No && cb_empty == IsFilled::No {
             //if both are deconfirmed then there is a contradiction in the logic
             anyhow::bail!("Contradiction found");
-        } else if cb_filled == "F" {
+        } else if cb_filled == IsFilled::No {
             //deconfirmed Filled, while Empty uninitialized, can say empty
             new_line.push("0");
-        } else if cb_empty == "F" {
+        } else if cb_empty == IsFilled::No {
             //deconfirmed Empty, while Filled uninitialized, can say empty
             new_line.push("1");
         }
@@ -455,9 +455,16 @@ fn theres_room(line: Vec<&str>, index: i8, num: i8, dir: i8) -> bool {
     true
 }
 
-struct Square<'a> {
-    could_be_filled: &'a str,
-    could_be_empty: &'a str,
+#[derive(PartialEq, Eq, Clone, Copy)]
+enum IsFilled {
+    Unknown,
+    Yes,
+    No,
+}
+
+struct Square {
+    could_be_filled: IsFilled,
+    could_be_empty: IsFilled,
 }
 
 trait Possibility {
@@ -470,49 +477,49 @@ trait Possibility {
     fn cant_be_empty(&mut self);
 }
 
-impl Possibility for Square<'_> {
-    fn new() -> Square<'static> {
-        return Square {
-            could_be_filled: "",
-            could_be_empty: "",
-        };
+impl Possibility for Square {
+    fn new() -> Self {
+        Self {
+            could_be_filled: IsFilled::Unknown,
+            could_be_empty: IsFilled::Unknown,
+        }
     }
 
     fn already_filled(&mut self) {
-        self.could_be_filled = "T";
-        self.could_be_empty = "F";
+        self.could_be_filled = IsFilled::Yes;
+        self.could_be_empty = IsFilled::No;
     }
 
     fn already_empty(&mut self) {
-        self.could_be_filled = "F";
-        self.could_be_empty = "T";
+        self.could_be_filled = IsFilled::No;
+        self.could_be_empty = IsFilled::Yes;
     }
 
     fn may_be_filled(&mut self) -> anyhow::Result<()> {
-        if self.could_be_filled == "F" {
+        if self.could_be_filled == IsFilled::No {
             anyhow::bail!("Contradiction found");
         } else {
-            self.could_be_filled = "T";
+            self.could_be_filled = IsFilled::Yes;
         }
 
         Ok(())
     }
 
     fn may_be_empty(&mut self) -> anyhow::Result<()> {
-        if self.could_be_empty == "F" {
+        if self.could_be_empty == IsFilled::No {
             anyhow::bail!("Contradiction found");
         } else {
-            self.could_be_empty = "T";
+            self.could_be_empty = IsFilled::Yes;
         }
 
         Ok(())
     }
 
     fn cant_be_filled(&mut self) {
-        self.could_be_filled = "F";
+        self.could_be_filled = IsFilled::No;
     }
 
     fn cant_be_empty(&mut self) {
-        self.could_be_empty = "F";
+        self.could_be_empty = IsFilled::No;
     }
 }
