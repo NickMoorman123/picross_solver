@@ -4,10 +4,12 @@ use anyhow::Context;
 use csv::StringRecord;
 
 fn main() -> anyhow::Result<()> {
-    let mut num_cols: usize = 0;
-    let mut num_rows: usize = 0;
-    let mut puzzle: Vec<StringRecord> = Vec::new();
-    check_data(&mut num_cols, &mut num_rows, &mut puzzle).context("error retrieving data")?;
+    let (puzzle, table_size) = read_input().context("error retrieving data")?;
+
+    let TableSize {
+        cols: num_cols,
+        rows: num_rows,
+    } = table_size;
 
     let mut col_headers: Vec<Vec<usize>> = Vec::new();
     let mut row_headers: Vec<Vec<usize>> = Vec::new();
@@ -45,39 +47,41 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn check_data(
-    num_cols: &mut usize,
-    num_rows: &mut usize,
-    puzzle: &mut Vec<StringRecord>,
-) -> Result<(), anyhow::Error> {
+struct TableSize {
+    cols: usize,
+    rows: usize,
+}
+
+fn read_input() -> Result<(Vec<StringRecord>, TableSize), anyhow::Error> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
         .from_reader(io::stdin());
 
-    let first = rdr
+    let first_row = rdr
         .records()
         .next()
         .ok_or_else(|| anyhow::anyhow!("no records found."))??;
 
-    *num_cols = first[0].parse()?;
-    *num_rows = first[1].parse()?;
+    let table_size = TableSize {
+        cols: first_row[0].parse()?,
+        rows: first_row[1].parse()?,
+    };
 
-    if first.len() != *num_cols {
-        anyhow::bail!("data corrupted: number of columns incorrect");
+    // Next collect all records from the input.
+    let data = rdr.records().collect::<Result<Vec<StringRecord>, _>>()?;
+
+    // Make sure the number of rows we collected is equal to the number expected.
+    if data.len() != table_size.rows {
+        anyhow::bail!("number of rows found does not match the expected input.");
     }
 
-    let mut counter: usize = 0;
-    for result in rdr.records() {
-        let record = result?;
-        puzzle.push(record);
-        counter += 1;
+    // We can check every row for the column count
+    // It may be necessary to only check the first?
+    if data.iter().any(|row| row.len() != table_size.cols) {
+        anyhow::bail!("the number of columns specified in the header did not match the number found in all rows.");
     }
 
-    if counter != *num_rows {
-        anyhow::bail!("data corrupted: number of rows incorrect");
-    }
-
-    Ok(())
+    Ok((data, table_size))
 }
 
 fn compute_headers(
