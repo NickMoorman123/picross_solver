@@ -52,6 +52,12 @@ struct TableSize {
     rows: usize,
 }
 
+/// Read an expected CSV format from standard input.
+///
+/// Input will be parsed and a vector of `StringRecord` is returned as well as `TableSize` so long
+/// as the input is valid.
+///
+/// TODO: document what the csv input should look like.
 fn read_input() -> Result<(Vec<StringRecord>, TableSize), anyhow::Error> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(false)
@@ -253,7 +259,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
         possiblities.push(Square::new());
     }
 
-    //what we know from original info
+    // what we know from original info
     for i in 0..len {
         if line[i] == "1" {
             possiblities[i].already_filled();
@@ -262,7 +268,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
         }
     }
 
-    //edges outside the extremes
+    // edges outside the extremes
     for i in 0..left[0] {
         possiblities[i].cant_be_filled();
         possiblities[i].may_be_empty()?;
@@ -271,19 +277,19 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
         possiblities[i].cant_be_filled();
         possiblities[i].may_be_empty()?;
     }
-    //add possibilities to cells based on possible locations
+    // add possibilities to cells based on possible locations
     for num_index in 0..nums_len {
         let num = nums[num_index];
         if left[num_index] + num - 1 < right[num_index] - num + 1 {
-            //min and max are disjoint
-            //min is ambiguous
+            // min and max are disjoint
+            // min is ambiguous
             for i in left[num_index]..left[num_index] + num {
                 if line[i] == "2" {
                     possiblities[i].may_be_filled()?;
                     possiblities[i].may_be_empty()?;
                 }
             }
-            //in between, mark cbfilled where there's room and cbempty where it's not filled
+            // in between, mark cbfilled where there's room and cbempty where it's not filled
             for index in left[num_index] + num..right[num_index] - num + 1 {
                 if line[index] == "2" {
                     if theres_room(line.clone(), index as i8, num as i8, 1) {
@@ -298,7 +304,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
                     possiblities[index].may_be_empty()?;
                 }
             }
-            //max is ambiguous
+            // max is ambiguous
             for i in right[num_index] - num + 1..right[num_index] + 1 {
                 if line[i] == "2" {
                     possiblities[i].may_be_filled()?;
@@ -306,15 +312,15 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
                 }
             }
         } else {
-            //min and max overlap
-            //write it all as ambiguous
+            // min and max overlap
+            // write it all as ambiguous
             for i in left[num_index]..right[num_index] + 1 {
                 if line[i] == "2" {
                     possiblities[i].may_be_filled()?;
                     possiblities[i].may_be_empty()?;
                 }
             }
-            //rewrite the overlapping portion
+            // rewrite the overlapping portion
             for i in right[num_index] - num + 1..left[num_index] + num {
                 if line[i] == "2" {
                     possiblities[i].cant_be_empty();
@@ -323,34 +329,34 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
         }
     }
     for num_index in 1..nums_len {
-        //if possible spots for consecutive nums have them non-overlapping
+        // if possible spots for consecutive nums have them non-overlapping
         for i in right[num_index - 1] + 1..left[num_index] {
             possiblities[i].cant_be_filled();
             possiblities[i].may_be_empty()?;
         }
     }
 
-    //return new info
+    // return new info
     for i in 0..len {
         let cb_filled = possiblities[i].could_be_filled;
         let cb_empty = possiblities[i].could_be_empty;
         if cb_filled == "T" && cb_empty == "T" {
-            //we don't know whic yet
+            // we don't know whic yet
             new_line.push("2");
         } else if cb_filled == "T" {
-            //confirm fill whether Empty is deconfirmed or uninitialized
+            // confirm fill whether Empty is deconfirmed or uninitialized
             new_line.push("1");
         } else if cb_empty == "T" {
-            //confirm empty whether Filled is deconfirmed or uninitialized
+            // confirm empty whether Filled is deconfirmed or uninitialized
             new_line.push("0");
         } else if cb_filled == "F" && cb_empty == "F" {
-            //if both are deconfirmed then there is a contradiction in the logic
+            // if both are deconfirmed then there is a contradiction in the logic
             anyhow::bail!("Contradiction found");
         } else if cb_filled == "F" {
-            //deconfirmed Filled, while Empty uninitialized, can say empty
+            // deconfirmed Filled, while Empty uninitialized, can say empty
             new_line.push("0");
         } else if cb_empty == "F" {
-            //deconfirmed Empty, while Filled uninitialized, can say empty
+            // deconfirmed Empty, while Filled uninitialized, can say empty
             new_line.push("1");
         }
     }
@@ -362,7 +368,7 @@ fn get_extreme(line: Vec<&str>, nums: Vec<usize>, dir: i8) -> anyhow::Result<Vec
     let len: i8 = line.len() as i8;
     let nums_len: i8 = nums.len() as i8;
 
-    //set up start positions
+    // set up start positions
     let mut index: i8 = 0;
     let mut num_index: i8 = 0;
     let mut extreme: Vec<usize> = Vec::new();
@@ -376,35 +382,35 @@ fn get_extreme(line: Vec<&str>, nums: Vec<usize>, dir: i8) -> anyhow::Result<Vec
 
     while num_index >= 0 && num_index < nums_len {
         let num: i8 = nums[num_index as usize] as i8;
-        //check that there's room
+        // check that there's room
         while !theres_room(line.clone(), index, num, dir) {
             index += dir;
         }
-        //take down left/right index of the num-block location
+        // take down left/right index of the num-block location
         extreme[num_index as usize] = index as usize;
-        //update indeces
+        // update indeces
         num_index += dir;
         index += (num + 1) * dir;
         if index < 0 || index > len {
             index -= dir;
         }
     }
-    //keep going to end
+    // keep going to end
     while index >= 0 && index < len {
         index += dir;
     }
-    //go backwards and shift blocks as needed to cover
-    //any existing filled Squares
+    // go backwards and shift blocks as needed to cover
+    // any existing filled Squares
     index -= dir;
     num_index -= dir;
     while num_index >= 0 && num_index < nums_len {
         let num: i8 = nums[num_index as usize] as i8;
-        //find a spot where the Possibility doesn't cover an
-        //existing filled cell
+        // find a spot where the Possibility doesn't cover an
+        // existing filled cell
         let mut i = index;
         while i != extreme[num_index as usize] as i8 + ((num - 1) * dir) {
             if line[i as usize] == "1" {
-                //may need to backtrack to cover the spot
+                // may need to backtrack to cover the spot
                 while !theres_room(line.clone(), i, num, -dir) {
                     i += dir;
                 }
@@ -416,8 +422,8 @@ fn get_extreme(line: Vec<&str>, nums: Vec<usize>, dir: i8) -> anyhow::Result<Vec
         index = extreme[num_index as usize] as i8 - dir;
         num_index -= dir;
     }
-    //check that we did not move something off of an
-    //existing colored in cell
+    // check that we did not move something off of an
+    // existing colored in cell
     while index >= 0 && index < len {
         if line[index as usize] == "1" {
             anyhow::bail!("Contradiction found");
@@ -430,13 +436,13 @@ fn get_extreme(line: Vec<&str>, nums: Vec<usize>, dir: i8) -> anyhow::Result<Vec
 
 fn theres_room(line: Vec<&str>, index: i8, num: i8, dir: i8) -> bool {
     let len: i8 = line.len() as i8;
-    //is the prior space not filled
+    // is the prior space not filled
     if index - dir != -1 && index - dir != len {
         if line[(index - dir) as usize] == "1" {
             return false;
         }
     }
-    //are all the required spaces not crossed?
+    // are all the required spaces not crossed?
     let mut i: i8 = index;
     while i != index + num * dir {
         if line[i as usize] == "0" {
@@ -444,7 +450,7 @@ fn theres_room(line: Vec<&str>, index: i8, num: i8, dir: i8) -> bool {
         }
         i += dir;
     }
-    //is the space next after not filled?
+    // is the space next after not filled?
     let next_after: i8 = index + num * dir;
     if next_after != -1 && next_after != len {
         if line[next_after as usize] == "1" {
