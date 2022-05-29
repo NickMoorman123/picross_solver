@@ -250,7 +250,7 @@ fn solve_line(line: Vec<&str>, nums: Vec<usize>) -> anyhow::Result<Vec<&str>> {
     let nums_len: usize = nums.len();
     let mut possiblities: Vec<Square> = Vec::new();
     for _n in 0..len {
-        possiblities.push(Possibility::new());
+        possiblities.push(Square::new());
     }
 
     //what we know from original info
@@ -460,17 +460,7 @@ struct Square<'a> {
     could_be_empty: &'a str,
 }
 
-trait Possibility {
-    fn new() -> Self;
-    fn already_filled(&mut self);
-    fn already_empty(&mut self);
-    fn may_be_filled(&mut self) -> anyhow::Result<()>;
-    fn may_be_empty(&mut self) -> anyhow::Result<()>;
-    fn cant_be_filled(&mut self);
-    fn cant_be_empty(&mut self);
-}
-
-impl Possibility for Square<'_> {
+impl Square<'_> {
     fn new() -> Square<'static> {
         return Square {
             could_be_filled: "",
